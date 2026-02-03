@@ -4,7 +4,273 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HumSearch - Melody Recognition</title>
-    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Results Styles */
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .similarity-badge {
+            background: linear-gradient(135deg, #4c1d95, #6b21a8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .song-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .song-info {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .match-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+        
+        .play-btn, .youtube-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .play-btn {
+            background: #4c1d95;
+            color: white;
+        }
+        
+        .play-btn:hover {
+            background: #5b21b6;
+        }
+        
+        .youtube-btn {
+            background: #ff0000;
+            color: white;
+        }
+        
+        .youtube-btn:hover {
+            background: #dc2626;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            margin: 0 auto 20px;
+            width: 50px;
+            height: 50px;
+        }
+        
+        .processing-text {
+            color: #4c1d95;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .results-container {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .results-container.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .no-results svg {
+            margin-bottom: 15px;
+            color: #9ca3af;
+        }
+        
+        .no-results h4 {
+            color: #4b5563;
+            margin-bottom: 8px;
+        }
+        
+        .no-results p {
+            color: #6b7280;
+            margin-bottom: 0;
+        }
+        
+        /* Analysis Section */
+        .analysis-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+        }
+        
+        .analysis-section.active {
+            display: block;
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .analysis-item {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4c1d95;
+        }
+        
+        .analysis-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .analysis-value {
+            color: #1f2937;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        /* Match Buttons */
+        .match-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .match-btn {
+            background: linear-gradient(135deg, #4c1d95 0%, #6b21a8 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(76, 29, 149, 0.2);
+        }
+        
+        .match-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 29, 149, 0.3);
+        }
+        
+        .match-btn:active {
+            transform: translateY(0);
+        }
+        
+        .match-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .match-btn:nth-child(2) {
+            background: linear-gradient(135deg, #6b21a8 0%, #7c3aed 100%);
+        }
+        
+        .match-btn:nth-child(3) {
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+        }
+        
+        .match-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .match-section h3 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        /* Status Messages */
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -45,7 +311,7 @@
             <div class="mode-content active" id="recordMode">
                 <div class="input-section">
                     <h2>Record Your Melody</h2>
-                    <p class="description">Select duration and start recording your humming</p>
+                    <p class="description">Hum or sing a part of a song to find matches</p>
 
                     <!-- Duration Selector -->
                     <div class="duration-selector">
@@ -70,7 +336,7 @@
                         <div class="timer" id="timer">00:00</div>
                     </div>
 
-                    <!-- Audio Player (Hidden initially) -->
+                    <!-- Audio Player -->
                     <div class="audio-player hidden" id="recordedAudioPlayer">
                         <div class="player-header">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -82,6 +348,30 @@
                         </div>
                         <audio controls id="recordedAudio"></audio>
                     </div>
+
+                    <!-- Status Message -->
+                    <div id="recordStatus" class="status-message hidden"></div>
+
+                    <!-- Match Button -->
+                    <div class="match-section hidden" id="recordMatchSection">
+                        <h3>Ready to Find Matches?</h3>
+                        <div class="match-buttons">
+                            <button class="match-btn" id="findMatchesBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span>Find Matching Songs</span>
+                            </button>
+                            <button class="match-btn" id="tryAgainBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 4v6h6"/>
+                                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                                </svg>
+                                <span>Record Again</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -89,7 +379,7 @@
             <div class="mode-content" id="uploadMode">
                 <div class="input-section">
                     <h2>Upload Audio File</h2>
-                    <p class="description">Choose an audio file from your device</p>
+                    <p class="description">Upload an audio file of your humming or singing</p>
 
                     <!-- File Upload -->
                     <div class="upload-area" id="uploadArea">
@@ -99,11 +389,11 @@
                             <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                         <p>Click to upload or drag and drop</p>
-                        <p class="file-types">MP3, WAV, OGG, M4A</p>
+                        <p class="file-types">MP3, WAV, OGG, M4A (Max 10MB)</p>
                         <input type="file" id="audioFileInput" accept="audio/*" hidden>
                     </div>
 
-                    <!-- Audio Player (Hidden initially) -->
+                    <!-- Audio Player -->
                     <div class="audio-player hidden" id="uploadedAudioPlayer">
                         <div class="player-header">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -115,34 +405,70 @@
                         </div>
                         <audio controls id="uploadedAudio"></audio>
                     </div>
+
+                    <!-- Status Message -->
+                    <div id="uploadStatus" class="status-message hidden"></div>
+
+                    <!-- Match Button -->
+                    <div class="match-section hidden" id="uploadMatchSection">
+                        <h3>Ready to Find Matches?</h3>
+                        <div class="match-buttons">
+                            <button class="match-btn" id="uploadFindMatchesBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span>Find Matching Songs</span>
+                            </button>
+                            <button class="match-btn" id="uploadTryAgainBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 4v6h6"/>
+                                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                                </svg>
+                                <span>Upload Another</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Match Buttons (Shown after audio is ready) -->
-            <div class="match-section hidden" id="matchSection">
-                <h3>Find Matching Songs</h3>
-                <div class="match-buttons">
-                    <button class="match-btn" id="match1Btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                        <span>Match 1</span>
-                    </button>
-                    <button class="match-btn" id="match2Btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                        <span>Match 2</span>
-                    </button>
-                    <button class="match-btn" id="match3Btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                        <span>Match 3</span>
-                    </button>
+            <!-- Loading Indicator -->
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner">
+                    <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+                        <circle cx="25" cy="25" r="20" stroke="#e5e7eb" stroke-width="5"/>
+                        <circle cx="25" cy="25" r="20" stroke="#4c1d95" stroke-width="5" stroke-linecap="round"
+                                stroke-dasharray="31.4 31.4" stroke-dashoffset="31.4">
+                            <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25"
+                                            dur="1s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                </div>
+                <p class="processing-text">Processing audio and finding matches...</p>
+            </div>
+
+            <!-- Analysis Section -->
+            <div class="analysis-section" id="analysisSection">
+                <h3>Audio Analysis</h3>
+                <div class="analysis-grid" id="analysisGrid">
+                    <!-- Filled by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-container" id="resultsSection">
+                <h3>Top Matches</h3>
+                <div id="resultsList"></div>
+                
+                <!-- No Results Message -->
+                <div class="no-results hidden" id="noResults">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <h4>No Matches Found</h4>
+                    <p>Try recording a clearer melody or upload a different audio file.</p>
                 </div>
             </div>
         </div>
@@ -153,6 +479,6 @@
         </footer>
     </div>
 
-    <script src="static/js/main.js"></script>
+    <script src="/static/js/main.js"></script>
 </body>
 </html>

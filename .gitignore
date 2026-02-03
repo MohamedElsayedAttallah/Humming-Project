@@ -1,2 +1,29 @@
-.idea
-.venv
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+db.sqlite3
+db.sqlite3-journal
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Media and database files (except sample songs)
+media/uploads/
+songs_database.json
+
+# Essentia cache
+.essentia/
