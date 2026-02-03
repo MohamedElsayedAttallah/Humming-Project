@@ -1,0 +1,481 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #333;
+}
+
+.container {
+    background: #ffffff;
+    border-radius: 0;
+    box-shadow: none;
+    max-width: 100%;
+    width: 100%;
+    height: 100vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, #4c1d95 0%, #6b21a8 100%);
+    color: white;
+    padding: 40px 30px;
+    text-align: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.logo h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.logo svg circle {
+    stroke: white;
+}
+
+.logo svg path {
+    fill: white;
+}
+
+.tagline {
+    font-size: 1rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+/* Mode Toggle */
+.mode-toggle {
+    display: flex;
+    gap: 0;
+    padding: 30px 30px 0;
+    background: #e5e7eb;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 16px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #4b5563;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.toggle-btn:hover {
+    color: #4c1d95;
+    background: rgba(76, 29, 149, 0.05);
+}
+
+.toggle-btn.active {
+    color: #4c1d95;
+    border-bottom-color: #4c1d95;
+    background: rgba(76, 29, 149, 0.1);
+}
+
+/* Content Area */
+.content-area {
+    padding: 40px 30px;
+    background: #e5e7eb;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.mode-content {
+    display: none;
+    animation: fadeIn 0.4s ease;
+    flex: 1;
+}
+
+.mode-content.active {
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Input Section */
+.input-section {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-section h2 {
+    font-size: 1.75rem;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.description {
+    color: #6b7280;
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+}
+
+/* Duration Selector */
+.duration-selector {
+    margin-bottom: 30px;
+}
+
+.duration-selector label {
+    display: block;
+    color: #374151;
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+}
+
+.duration-select {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 12px;
+    font-size: 1rem;
+    color: #1f2937;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.duration-select:hover {
+    border-color: #4c1d95;
+}
+
+.duration-select:focus {
+    outline: none;
+    border-color: #4c1d95;
+    box-shadow: 0 0 0 3px rgba(76, 29, 149, 0.1);
+}
+
+/* Record Controls */
+.record-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    justify-content: center;
+}
+
+.record-btn {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 18px 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.record-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+}
+
+.record-btn:active {
+    transform: translateY(0);
+}
+
+.record-btn.recording {
+    background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(76, 29, 149, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(76, 29, 149, 0.6);
+    }
+}
+
+.timer {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4c1d95;
+    font-variant-numeric: tabular-nums;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Upload Area */
+.upload-area {
+    border: 3px dashed #d1d5db;
+    border-radius: 16px;
+    padding: 60px 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-area:hover {
+    border-color: #4c1d95;
+    background: rgba(76, 29, 149, 0.05);
+}
+
+.upload-area.drag-over {
+    border-color: #4c1d95;
+    background: rgba(76, 29, 149, 0.1);
+    transform: scale(1.02);
+}
+
+.upload-area svg {
+    margin-bottom: 20px;
+    color: #4c1d95;
+}
+
+.upload-area p {
+    color: #374151;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.file-types {
+    color: #9ca3af !important;
+    font-size: 0.9rem !important;
+    font-weight: 400 !important;
+}
+
+/* Audio Player */
+.audio-player {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.audio-player.hidden {
+    display: none;
+}
+
+.player-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    color: #374151;
+    font-weight: 600;
+}
+
+.player-header svg {
+    color: #4c1d95;
+}
+
+.audio-player audio {
+    width: 100%;
+    border-radius: 8px;
+    outline: none;
+}
+
+/* Match Section */
+.match-section {
+    margin-top: 30px;
+    padding: 30px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.match-section.hidden {
+    display: none;
+}
+
+.match-section h3 {
+    font-size: 1.5rem;
+    color: #1f2937;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.match-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.match-btn {
+    background: linear-gradient(135deg, #4c1d95 0%, #6b21a8 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 18px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(76, 29, 149, 0.2);
+}
+
+.match-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(76, 29, 149, 0.3);
+}
+
+.match-btn:active {
+    transform: translateY(0);
+}
+
+.match-btn:nth-child(2) {
+    background: linear-gradient(135deg, #6b21a8 0%, #7c3aed 100%);
+}
+
+.match-btn:nth-child(3) {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+}
+
+/* Footer */
+.footer {
+    background: #e5e7eb;
+    padding: 20px 30px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+    border-top: 1px solid #d1d5db;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .logo h1 {
+        font-size: 2rem;
+    }
+
+    .content-area {
+        padding: 30px 20px;
+    }
+
+    .input-section {
+        padding: 20px;
+    }
+
+    .toggle-btn {
+        padding: 14px 16px;
+        font-size: 0.9rem;
+    }
+
+    .toggle-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .match-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .record-btn {
+        padding: 16px 32px;
+        font-size: 1rem;
+    }
+
+    .timer {
+        font-size: 1.5rem;
+    }
+
+    .upload-area {
+        padding: 40px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 0;
+    }
+
+    .container {
+        border-radius: 0;
+    }
+
+    .header {
+        padding: 30px 20px;
+    }
+
+    .logo {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .logo h1 {
+        font-size: 1.75rem;
+    }
+
+    .mode-toggle {
+        padding: 20px 20px 0;
+    }
+
+    .toggle-btn span {
+        display: none;
+    }
+
+    .content-area {
+        padding: 20px 15px;
+    }
+
+    .match-section {
+        padding: 20px;
+    }
+}

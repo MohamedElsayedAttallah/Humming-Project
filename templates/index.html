@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HumSearch - Melody Recognition</title>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18" stroke="#6366f1" stroke-width="2"/>
+                    <path d="M15 20C15 20 17 15 20 15C23 15 25 20 25 20C25 20 23 25 20 25C17 25 15 20 15 20Z" fill="#6366f1"/>
+                </svg>
+                <h1>HumSearch</h1>
+            </div>
+            <p class="tagline">Find songs by humming or uploading audio</p>
+        </header>
+
+        <!-- Mode Toggle -->
+        <div class="mode-toggle">
+            <button class="toggle-btn active" id="recordModeBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                </svg>
+                Record Audio
+            </button>
+            <button class="toggle-btn" id="uploadModeBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Upload Audio
+            </button>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <!-- Record Mode -->
+            <div class="mode-content active" id="recordMode">
+                <div class="input-section">
+                    <h2>Record Your Melody</h2>
+                    <p class="description">Select duration and start recording your humming</p>
+
+                    <!-- Duration Selector -->
+                    <div class="duration-selector">
+                        <label for="duration">Recording Duration:</label>
+                        <select id="duration" class="duration-select">
+                            <option value="5">5 seconds</option>
+                            <option value="10" selected>10 seconds</option>
+                            <option value="15">15 seconds</option>
+                            <option value="20">20 seconds</option>
+                            <option value="30">30 seconds</option>
+                        </select>
+                    </div>
+
+                    <!-- Record Controls -->
+                    <div class="record-controls">
+                        <button class="record-btn" id="recordBtn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="12" r="8"/>
+                            </svg>
+                            <span>Start Recording</span>
+                        </button>
+                        <div class="timer" id="timer">00:00</div>
+                    </div>
+
+                    <!-- Audio Player (Hidden initially) -->
+                    <div class="audio-player hidden" id="recordedAudioPlayer">
+                        <div class="player-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13"/>
+                                <circle cx="6" cy="18" r="3"/>
+                                <circle cx="18" cy="16" r="3"/>
+                            </svg>
+                            <span>Recorded Audio</span>
+                        </div>
+                        <audio controls id="recordedAudio"></audio>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Mode -->
+            <div class="mode-content" id="uploadMode">
+                <div class="input-section">
+                    <h2>Upload Audio File</h2>
+                    <p class="description">Choose an audio file from your device</p>
+
+                    <!-- File Upload -->
+                    <div class="upload-area" id="uploadArea">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="file-types">MP3, WAV, OGG, M4A</p>
+                        <input type="file" id="audioFileInput" accept="audio/*" hidden>
+                    </div>
+
+                    <!-- Audio Player (Hidden initially) -->
+                    <div class="audio-player hidden" id="uploadedAudioPlayer">
+                        <div class="player-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13"/>
+                                <circle cx="6" cy="18" r="3"/>
+                                <circle cx="18" cy="16" r="3"/>
+                            </svg>
+                            <span id="uploadedFileName">Uploaded Audio</span>
+                        </div>
+                        <audio controls id="uploadedAudio"></audio>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Match Buttons (Shown after audio is ready) -->
+            <div class="match-section hidden" id="matchSection">
+                <h3>Find Matching Songs</h3>
+                <div class="match-buttons">
+                    <button class="match-btn" id="match1Btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>Match 1</span>
+                    </button>
+                    <button class="match-btn" id="match2Btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>Match 2</span>
+                    </button>
+                    <button class="match-btn" id="match3Btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>Match 3</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 HumSearch. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="static/js/main.js"></script>
+</body>
+</html>
