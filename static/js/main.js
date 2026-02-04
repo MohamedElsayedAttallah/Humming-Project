@@ -7,6 +7,9 @@ let startTime;
 let selectedDuration = 10;
 let currentAudioBlob = null;
 let currentMode = 'record'; // 'record' or 'upload'
+let audioContext;
+let analyser;
+let visualizerInterval;
 
 // DOM Elements
 const recordModeBtn = document.getElementById('recordModeBtn');
@@ -29,6 +32,8 @@ const resultsList = document.getElementById('resultsList');
 const noResults = document.getElementById('noResults');
 const analysisSection = document.getElementById('analysisSection');
 const analysisGrid = document.getElementById('analysisGrid');
+const visualizer = document.getElementById('visualizer');
+const currentPath = document.getElementById('currentPath');
 
 // Match Section Elements
 const recordMatchSection = document.getElementById('recordMatchSection');
@@ -43,20 +48,56 @@ const uploadStatus = document.getElementById('uploadStatus');
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
+    updatePath('Record Mode');
     showWelcomeMessage();
+    
+    // Initialize audio context for visualizer
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        console.warn('Web Audio API not supported');
+    }
     
     // Check if Web Audio API is supported
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showStatus('record', 'Your browser does not support audio recording. Please use Chrome, Firefox, or Edge.', 'error');
         recordBtn.disabled = true;
     }
+    
+    // Handle logo image error
+    const logoImg = document.querySelector('.logo-img');
+    if (logoImg) {
+        logoImg.onerror = function() {
+            // Create fallback logo icon
+            const fallbackLogo = document.createElement('div');
+            fallbackLogo.className = 'logo-icon-fallback';
+            fallbackLogo.innerHTML = '<i class="fas fa-music"></i>';
+            fallbackLogo.style.cssText = `
+                width: 50px;
+                height: 50px;
+                background: #ef3f65;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid #ef3f65;
+            `;
+            logoImg.parentNode.replaceChild(fallbackLogo, logoImg);
+        };
+    }
 });
 
 // Event Listeners
 function initializeEventListeners() {
     // Mode toggle
-    recordModeBtn.addEventListener('click', () => switchMode('record'));
-    uploadModeBtn.addEventListener('click', () => switchMode('upload'));
+    recordModeBtn.addEventListener('click', () => {
+        switchMode('record');
+        updatePath('Record Mode');
+    });
+    uploadModeBtn.addEventListener('click', () => {
+        switchMode('upload');
+        updatePath('Upload Mode');
+    });
 
     // Duration selector
     durationSelect.addEventListener('change', (e) => {
@@ -76,20 +117,86 @@ function initializeEventListeners() {
     audioFileInput.addEventListener('change', handleFileSelect);
 
     // Match buttons
-    findMatchesBtn.addEventListener('click', () => processCurrentAudio('record'));
-    tryAgainBtn.addEventListener('click', resetRecordMode);
-    uploadFindMatchesBtn.addEventListener('click', () => processCurrentAudio('upload'));
-    uploadTryAgainBtn.addEventListener('click', resetUploadMode);
+    findMatchesBtn.addEventListener('click', () => {
+        updatePath('Processing...');
+        processCurrentAudio('record');
+    });
+    tryAgainBtn.addEventListener('click', () => {
+        resetRecordMode();
+        updatePath('Record Mode');
+    });
+    uploadFindMatchesBtn.addEventListener('click', () => {
+        updatePath('Processing...');
+        processCurrentAudio('upload');
+    });
+    uploadTryAgainBtn.addEventListener('click', () => {
+        resetUploadMode();
+        updatePath('Upload Mode');
+    });
+
+    // Theme toggle
+    document.querySelector('.header-btn[title="Settings"]')?.addEventListener('click', () => {
+        // Toggle theme
+        document.body.classList.toggle('light-theme');
+        const themeIcon = document.querySelector('.header-btn[title="Settings"] i');
+        if (document.body.classList.contains('light-theme')) {
+            themeIcon.className = 'fas fa-moon';
+        } else {
+            themeIcon.className = 'fas fa-sun';
+        }
+    });
+
+    // Help button
+    document.querySelector('.header-btn[title="Help"]')?.addEventListener('click', () => {
+        showStatus(currentMode, 
+            'Need help? 1. Record or upload audio 2. Click Find Matches 3. View results and play songs', 
+            'info');
+    });
+
+    // Window resize handling
+    window.addEventListener('resize', handleResize);
+}
+
+// Update path in header
+function updatePath(path) {
+    if (currentPath) {
+        currentPath.textContent = path;
+        // Add animation
+        currentPath.style.animation = 'none';
+        setTimeout(() => {
+            currentPath.style.animation = 'fadeIn 0.3s ease';
+        }, 10);
+    }
+}
+
+// Handle window resize
+function handleResize() {
+    // Adjust visualizer size on resize
+    if (visualizerInterval) {
+        // Force re-render of visualizer
+        const bars = visualizer.querySelectorAll('.bar');
+        bars.forEach(bar => {
+            bar.style.transform = 'scale(1)';
+        });
+    }
 }
 
 // Show welcome message
 function showWelcomeMessage() {
     console.log('HumSearch initialized. Ready to find songs!');
+    showStatus('record', 'Welcome to HumSearch! Click the microphone to start recording.', 'info');
 }
 
 // Mode Switching
 function switchMode(mode) {
     currentMode = mode;
+    
+    // Reset all content animations
+    document.querySelectorAll('.mode-content').forEach(content => {
+        content.classList.remove('content-fade-in');
+        void content.offsetWidth; // Trigger reflow
+        content.classList.add('content-fade-in');
+    });
     
     if (mode === 'record') {
         recordModeBtn.classList.add('active');
@@ -113,8 +220,10 @@ function switchMode(mode) {
 async function toggleRecording() {
     if (!mediaRecorder || mediaRecorder.state === 'inactive') {
         await startRecording();
+        updatePath('Recording...');
     } else {
         stopRecording();
+        updatePath('Record Mode');
     }
 }
 
@@ -129,6 +238,17 @@ async function startRecording() {
                 autoGainControl: true
             } 
         });
+
+        // Set up visualizer
+        if (audioContext) {
+            const source = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            
+            visualizer.style.display = 'flex';
+            startVisualizer();
+        }
 
         // Use webm format which is widely supported
         const options = { 
@@ -173,6 +293,7 @@ async function startRecording() {
             }
             
             stream.getTracks().forEach(track => track.stop());
+            stopVisualizer();
         };
 
         mediaRecorder.start(100); // Collect data every 100ms
@@ -182,6 +303,7 @@ async function startRecording() {
         recordingTimeout = setTimeout(() => {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 stopRecording();
+                updatePath('Record Mode');
             }
         }, selectedDuration * 1000);
 
@@ -197,24 +319,62 @@ function stopRecording() {
         clearTimeout(recordingTimeout);
         clearInterval(timerInterval);
         updateRecordButton(false);
+        visualizer.style.display = 'none';
+        stopVisualizer();
     }
+}
+
+function startVisualizer() {
+    if (!analyser) return;
+    
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    const bars = visualizer.querySelectorAll('.bar');
+    
+    visualizerInterval = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        
+        // Update bar heights
+        bars.forEach((bar, index) => {
+            const barIndex = Math.floor((index / bars.length) * bufferLength);
+            const height = (dataArray[barIndex] / 255) * 30;
+            bar.style.height = Math.max(10, height) + 'px';
+            bar.style.opacity = Math.max(0.5, dataArray[barIndex] / 255);
+            bar.style.backgroundColor = `rgba(239, 63, 101, ${0.5 + (dataArray[barIndex] / 255) * 0.5})`;
+        });
+    }, 100);
+}
+
+function stopVisualizer() {
+    if (visualizerInterval) {
+        clearInterval(visualizerInterval);
+        visualizerInterval = null;
+    }
+    
+    // Reset bar heights
+    const bars = visualizer.querySelectorAll('.bar');
+    bars.forEach(bar => {
+        bar.style.height = '10px';
+        bar.style.opacity = '1';
+        bar.style.backgroundColor = '#ef3f65';
+    });
 }
 
 function updateRecordButton(isRecording) {
     if (isRecording) {
         recordBtn.classList.add('recording');
         recordBtn.innerHTML = `
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="6" width="12" height="12" rx="2"/>
-            </svg>
+            <div class="record-icon">
+                <i class="fas fa-stop-circle"></i>
+            </div>
             <span>Stop Recording</span>
         `;
     } else {
         recordBtn.classList.remove('recording');
         recordBtn.innerHTML = `
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="8"/>
-            </svg>
+            <div class="record-icon">
+                <i class="fas fa-microphone"></i>
+            </div>
             <span>Start Recording</span>
         `;
     }
@@ -233,6 +393,18 @@ function startTimer() {
             const minutes = Math.floor(remaining / 60);
             const seconds = remaining % 60;
             timer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            // Color change when time is running out
+            if (remaining <= 5) {
+                timer.style.color = '#ff0000';
+                timer.style.textShadow = '0 0 10px rgba(255, 0, 0, 0.5)';
+            } else if (remaining <= 10) {
+                timer.style.color = '#ffa500';
+                timer.style.textShadow = '0 0 10px rgba(255, 165, 0, 0.5)';
+            } else {
+                timer.style.color = '#ef3f65';
+                timer.style.textShadow = '0 0 10px rgba(239, 63, 101, 0.5)';
+            }
         }
     }, 100);
 }
@@ -307,7 +479,10 @@ function hideMatchSection() {
 function showStatus(mode, message, type) {
     const statusElement = mode === 'record' ? recordStatus : uploadStatus;
     
-    statusElement.textContent = message;
+    statusElement.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        ${message}
+    `;
     statusElement.className = `status-message status-${type}`;
     statusElement.classList.remove('hidden');
     
@@ -321,6 +496,7 @@ function showStatus(mode, message, type) {
 async function processCurrentAudio(mode) {
     if (!currentAudioBlob) {
         showStatus(mode, 'No audio available. Please record or upload first.', 'error');
+        updatePath(mode === 'record' ? 'Record Mode' : 'Upload Mode');
         return;
     }
     
@@ -337,7 +513,6 @@ async function processCurrentAudio(mode) {
             formData.append('audio', currentAudioBlob);
         } else if (currentAudioBlob instanceof Blob) {
             // Recorded audio
-            // Create a file from blob with proper filename
             const filename = mode === 'record' ? 'recording.webm' : 'audio.webm';
             formData.append('audio', currentAudioBlob, filename);
         }
@@ -361,15 +536,20 @@ async function processCurrentAudio(mode) {
             // Hide match section after processing
             hideMatchSection();
             
+            // Update path
+            updatePath('Results');
+            
         } else {
             showStatus(mode, data.error || 'Error processing audio', 'error');
             showNoResults();
+            updatePath(mode === 'record' ? 'Record Mode' : 'Upload Mode');
         }
         
     } catch (error) {
         console.error('Processing error:', error);
         showStatus(mode, 'Error processing audio. Please try again.', 'error');
         showNoResults();
+        updatePath(mode === 'record' ? 'Record Mode' : 'Upload Mode');
     }
     
     hideLoading();
@@ -381,27 +561,33 @@ function showAnalysis(features) {
     analysisGrid.innerHTML = '';
     
     const analysisData = [
-        { label: 'Detected Tempo', value: `${features.tempo?.toFixed(1) || 'N/A'} BPM` },
-        { label: 'Duration', value: `${features.duration?.toFixed(1) || 'N/A'} seconds` },
-        { label: 'Pitch Features', value: features.pitch_count || 0 },
-        { label: 'Onset Count', value: features.onset_count || 'N/A' }
+        { label: 'Detected Tempo', value: `${features.tempo?.toFixed(1) || 'N/A'} BPM`, icon: 'fas fa-tachometer-alt' },
+        { label: 'Duration', value: `${features.duration?.toFixed(1) || 'N/A'} seconds`, icon: 'fas fa-clock' },
+        { label: 'Pitch Features', value: features.pitch_count || 0, icon: 'fas fa-music' },
+        { label: 'Onset Count', value: features.onset_count || 'N/A', icon: 'fas fa-wave-square' },
+        { label: 'Frequency Range', value: features.freq_range || 'N/A', icon: 'fas fa-chart-line' },
+        { label: 'Energy', value: features.energy ? `${(features.energy * 100).toFixed(1)}%` : 'N/A', icon: 'fas fa-bolt' }
     ];
     
     analysisData.forEach(item => {
         const div = document.createElement('div');
         div.className = 'analysis-item';
         div.innerHTML = `
-            <div class="analysis-label">${item.label}</div>
+            <div class="analysis-label">
+                <i class="${item.icon}"></i> ${item.label}
+            </div>
             <div class="analysis-value">${item.value}</div>
         `;
         analysisGrid.appendChild(div);
     });
     
     analysisSection.classList.add('active');
+    analysisSection.classList.add('content-fade-in');
 }
 
 function hideAnalysis() {
     analysisSection.classList.remove('active');
+    analysisSection.classList.remove('content-fade-in');
 }
 
 function displayResults(matches) {
@@ -415,42 +601,55 @@ function displayResults(matches) {
     
     matches.forEach((match, index) => {
         const resultCard = document.createElement('div');
-        resultCard.className = 'result-card';
+        resultCard.className = 'result-card content-fade-in';
+        resultCard.style.animationDelay = `${index * 0.1}s`;
         
         // Search YouTube URL
         const youtubeQuery = encodeURIComponent(match.name + ' official audio');
         const youtubeUrl = `https://www.youtube.com/results?search_query=${youtubeQuery}`;
         
         // Determine color based on similarity
-        let similarityColor = '#dc2626'; // red for low
-        if (match.similarity > 60) similarityColor = '#16a34a'; // green for high
-        else if (match.similarity > 30) similarityColor = '#ca8a04'; // yellow for medium
+        let similarityColor = '#ef3f65'; // pink for low-medium
+        if (match.similarity > 80) similarityColor = '#10b981'; // green for high
+        else if (match.similarity > 60) similarityColor = '#f59e0b'; // yellow for medium
         
         // Get rank emoji
         const rankEmoji = ['🥇', '🥈', '🥉'][index] || '🎵';
         
+        // Get genre color
+        const genreColors = {
+            'pop': '#ef4444',
+            'rock': '#f97316',
+            'jazz': '#10b981',
+            'classical': '#3b82f6',
+            'hiphop': '#8b5cf6',
+            'electronic': '#ec4899'
+        };
+        
+        const genre = match.genre?.toLowerCase() || 'pop';
+        const genreColor = genreColors[genre] || '#ef3f65';
+        
         resultCard.innerHTML = `
-            <div style="font-size: 1.5rem;">${rankEmoji}</div>
-            <div class="similarity-badge" style="background: linear-gradient(135deg, ${similarityColor}, #4c1d95);">
+            <div style="font-size: 2rem; color: ${genreColor};">${rankEmoji}</div>
+            <div class="similarity-badge" style="background: linear-gradient(135deg, ${similarityColor}, #ef3f65);">
                 ${match.similarity}% Match
             </div>
             <div style="flex: 1;">
                 <div class="song-name">${match.name}</div>
                 <div class="song-info">
-                    Tempo: ${match.tempo ? match.tempo.toFixed(1) : 'N/A'} BPM
+                    <i class="fas fa-user"></i> ${match.artist || 'Unknown Artist'} 
+                    | <i class="fas fa-music"></i> ${genre} 
+                    | <i class="fas fa-tachometer-alt"></i> ${match.tempo ? match.tempo.toFixed(1) : 'N/A'} BPM
                 </div>
+                ${match.year ? `<div class="song-info"><i class="fas fa-calendar"></i> Released: ${match.year}</div>` : ''}
             </div>
             <div class="match-actions">
                 <button class="play-btn" onclick="playSong('${match.path}')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="5 3 19 12 5 21 5 3"/>
-                    </svg>
+                    <i class="fas fa-play"></i>
                     Play
                 </button>
                 <a href="${youtubeUrl}" target="_blank" class="youtube-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-                    </svg>
+                    <i class="fab fa-youtube"></i>
                     YouTube
                 </a>
             </div>
@@ -466,6 +665,7 @@ function showNoResults() {
     resultsList.innerHTML = '';
     noResults.classList.remove('hidden');
     resultsSection.classList.add('active');
+    noResults.classList.add('content-fade-in');
 }
 
 function hideResults() {
@@ -494,8 +694,11 @@ function resetRecordMode() {
     }
     recordedAudioPlayer.classList.add('hidden');
     timer.textContent = '00:00';
+    timer.style.color = '#ef3f65';
+    timer.style.textShadow = '0 0 10px rgba(239, 63, 101, 0.5)';
     audioChunks = [];
     currentAudioBlob = null;
+    visualizer.style.display = 'none';
     hideResults();
     hideAnalysis();
     hideMatchSection();
@@ -523,76 +726,68 @@ function playSong(songPath) {
 
 // Test function for debugging
 window.testRecording = async function() {
-    // Simulate a recording for testing
     console.log('Testing recording functionality...');
     
-    // Create a test audio blob
-    const testDuration = 3;
-    const sampleRate = 22050;
-    const samples = sampleRate * testDuration;
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const buffer = audioContext.createBuffer(1, samples, sampleRate);
-    const data = buffer.getChannelData(0);
+    // Show loading state
+    showLoading();
+    showStatus('record', 'Generating test audio...', 'info');
     
-    // Generate a simple sine wave
-    for (let i = 0; i < samples; i++) {
-        data[i] = Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.5;
-    }
-    
-    // Convert to WAV
-    function floatTo16BitPCM(output, offset, input) {
-        for (let i = 0; i < input.length; i++, offset += 2) {
-            const s = Math.max(-1, Math.min(1, input[i]));
-            output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-        }
-    }
-    
-    function writeString(view, offset, string) {
-        for (let i = 0; i < string.length; i++) {
-            view.setUint8(offset + i, string.charCodeAt(i));
-        }
-    }
-    
-    function encodeWAV(samples, sampleRate) {
-        const buffer = new ArrayBuffer(44 + samples.length * 2);
-        const view = new DataView(buffer);
+    setTimeout(() => {
+        hideLoading();
+        showMatchSection('record');
+        showStatus('record', 'Test recording ready! Click "Find Matching Songs".', 'success');
+        updatePath('Results');
         
-        // RIFF identifier
-        writeString(view, 0, 'RIFF');
-        // RIFF chunk length
-        view.setUint32(4, 36 + samples.length * 2, true);
-        // RIFF type
-        writeString(view, 8, 'WAVE');
-        // format chunk identifier
-        writeString(view, 12, 'fmt ');
-        // format chunk length
-        view.setUint32(16, 16, true);
-        // sample format (raw)
-        view.setUint16(20, 1, true);
-        // channel count
-        view.setUint16(22, 1, true);
-        // sample rate
-        view.setUint32(24, sampleRate, true);
-        // byte rate (sample rate * block align)
-        view.setUint32(28, sampleRate * 2, true);
-        // block align (channel count * bytes per sample)
-        view.setUint16(32, 2, true);
-        // bits per sample
-        view.setUint16(34, 16, true);
-        // data chunk identifier
-        writeString(view, 36, 'data');
-        // data chunk length
-        view.setUint32(40, samples.length * 2, true);
+        // Show sample results for testing
+        const testMatches = [
+            { 
+                name: "Imagine - John Lennon", 
+                artist: "John Lennon",
+                similarity: 85, 
+                tempo: 76, 
+                path: "sample_songs/imagine.mp3",
+                genre: "pop",
+                year: 1971
+            },
+            { 
+                name: "Bohemian Rhapsody - Queen", 
+                artist: "Queen",
+                similarity: 72, 
+                tempo: 144, 
+                path: "sample_songs/bohemian.mp3",
+                genre: "rock",
+                year: 1975
+            },
+            { 
+                name: "Yesterday - The Beatles", 
+                artist: "The Beatles",
+                similarity: 68, 
+                tempo: 94, 
+                path: "sample_songs/yesterday.mp3",
+                genre: "pop",
+                year: 1965
+            }
+        ];
         
-        floatTo16BitPCM(view, 44, samples);
+        const testFeatures = {
+            tempo: 120.5,
+            duration: 12.3,
+            pitch_count: 45,
+            onset_count: 28,
+            freq_range: "120-880 Hz",
+            energy: 0.75
+        };
         
-        return buffer;
-    }
-    
-    const wavBuffer = encodeWAV(data, sampleRate);
-    currentAudioBlob = new Blob([wavBuffer], { type: 'audio/wav' });
-    
-    // Show match section
-    showMatchSection('record');
-    showStatus('record', 'Test recording ready! Click "Find Matching Songs".', 'info');
+        showAnalysis(testFeatures);
+        displayResults(testMatches);
+        hideMatchSection();
+    }, 1500);
+};
+
+// Export for debugging
+window.appState = {
+    currentMode,
+    selectedDuration,
+    hasAudio: !!currentAudioBlob,
+    updatePath
 };

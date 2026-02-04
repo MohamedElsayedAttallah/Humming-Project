@@ -266,7 +266,7 @@ class QTuneProcessor:
             tempo_diff = abs(song_tempo - user_tempo)
             tempo_similarity = max(0, 1.0 - tempo_diff / max(song_tempo, user_tempo))
             
-            # Calculate pitch sequence similarity using dynamic time warping
+            # Calculate pitch sequence similarity using dynamic time warping (DTW)
             if len(song_pitches) > 0 and len(user_pitches) > 0:
                 # Simple correlation-based similarity
                 min_len = min(len(song_pitches), len(user_pitches))

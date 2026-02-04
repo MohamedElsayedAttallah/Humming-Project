@@ -22,8 +22,7 @@ env/
 Thumbs.db
 
 # Media and database files (except sample songs)
-media/uploads/
-songs_database.json
+
 
 # Essentia cache
 .essentia/
