@@ -565,8 +565,7 @@ function showAnalysis(features) {
         { label: 'Duration', value: `${features.duration?.toFixed(1) || 'N/A'} seconds`, icon: 'fas fa-clock' },
         { label: 'Pitch Features', value: features.pitch_count || 0, icon: 'fas fa-music' },
         { label: 'Onset Count', value: features.onset_count || 'N/A', icon: 'fas fa-wave-square' },
-        { label: 'Frequency Range', value: features.freq_range || 'N/A', icon: 'fas fa-chart-line' },
-        { label: 'Energy', value: features.energy ? `${(features.energy * 100).toFixed(1)}%` : 'N/A', icon: 'fas fa-bolt' }
+       
     ];
     
     analysisData.forEach(item => {

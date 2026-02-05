@@ -249,7 +249,7 @@ class QTuneProcessor:
         except Exception as e:
             print(f"Error processing user audio: {e}")
             return None
-    
+    # using weighted approach 
     def calculate_similarity(self, song_features: dict, user_features: dict) -> float:
         """Calculate similarity score between song and user input."""
         try:
@@ -266,7 +266,6 @@ class QTuneProcessor:
             tempo_diff = abs(song_tempo - user_tempo)
             tempo_similarity = max(0, 1.0 - tempo_diff / max(song_tempo, user_tempo))
             
-            # Calculate pitch sequence similarity using dynamic time warping (DTW)
             if len(song_pitches) > 0 and len(user_pitches) > 0:
                 # Simple correlation-based similarity
                 min_len = min(len(song_pitches), len(user_pitches))
@@ -292,7 +291,7 @@ class QTuneProcessor:
             print(f"Error calculating similarity: {e}")
             return 0.0
     
-    def find_best_matches(self, user_features: dict, database: list, top_n: int = 3) -> list:
+    def find_best_matches(self, user_features: dict, database: list, top_n: int = 5) -> list:
         """Find best matching songs from database."""
         matches = []
         
